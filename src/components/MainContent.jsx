@@ -43,12 +43,18 @@ const MainContent = () => {
       <Center h="100vh" bg="gray.50">
         <VStack spacing={6}>
           <Image 
-            src="https://openmrs.org/wp-content/uploads/2017/07/openmrs-logo-300.png" 
-            alt="OpenMRS Logo" 
-            maxW="200px" 
+            src="/openmrs_ai_assistant_logo.png" 
+            alt="OpenMRS AI Assistant Logo" 
+            maxW="300px" 
           />
-          <Heading size="lg" color="gray.600">OpenMRS AI Assistant</Heading>
-          <Text color="gray.500">Connect to an OpenMRS server to get started</Text>
+          <VStack spacing={3} maxW="600px" textAlign="center" px={4}>
+            <Text color="gray.600" fontSize="lg">
+              An AI-powered assistant that provides intelligent insights from OpenMRS patient data through a conversational interface
+            </Text>
+            <Text color="gray.500">
+              Connect to an OpenMRS server to get started
+            </Text>
+          </VStack>
         </VStack>
       </Center>
     )
