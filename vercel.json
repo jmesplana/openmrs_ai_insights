@@ -13,5 +13,9 @@
         { "key": "X-XSS-Protection", "value": "1; mode=block" }
       ]
     }
+  ],
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "/api/proxy" },
+    { "source": "/api/stream/:path*", "destination": "/api/stream" }
   ]
 }

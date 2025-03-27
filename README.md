@@ -195,6 +195,22 @@ OpenMRS AI Insights addresses several critical challenges in healthcare informat
 - Ollama for local AI processing
 - Express local proxy server for development
 
+## Deployment to Vercel
+
+This application is designed to be easily deployed to Vercel, with serverless functions to handle API proxying:
+
+1. **Push your repository to GitHub**
+2. **Connect your repository to Vercel**:
+   - Create a new project in Vercel
+   - Select your repository
+   - Keep the default settings (Vercel will automatically detect it's a Vite/React app)
+   - Click "Deploy"
+
+3. **How it works on Vercel**:
+   - The application's frontend is served as static files
+   - Serverless API routes (`/api/proxy.js` and `/api/stream.js`) handle all the proxying
+   - No need to run a separate proxy server in production
+
 ## How CORS Issues Are Handled
 
 This application handles CORS issues in several ways:
@@ -203,10 +219,52 @@ This application handles CORS issues in several ways:
    - Default: Mock data mode that doesn't require API connections
    - Alternative: Local proxy server that forwards requests to OpenMRS API
 
-2. **For production**:
+2. **For Vercel deployment**:
+   - Serverless API routes handle all proxying seamlessly
+   - All API requests are routed through these serverless functions
+   - The vercel.json configuration contains the necessary rewrites to make this work
+
+3. **For other production environments**:
    - Direct API connections (when deployed on domains allowed by the OpenMRS server)
-   - Create serverless functions to proxy the requests (recommended for Vercel deployment)
+   - Create serverless functions to proxy the requests
    - Configure the OpenMRS server to allow CORS from your domain
+
+## Troubleshooting CORS Issues
+
+If you encounter CORS errors like this:
+```
+Access to XMLHttpRequest at 'https://o2.openmrs.org/openmrs/ws/rest/v1/session' from origin '...' has been blocked by CORS policy
+```
+
+### For Vercel Deployment:
+1. Verify your vercel.json has the correct configuration:
+   ```json
+   "rewrites": [
+     { "source": "/api/:path*", "destination": "/api/proxy" },
+     { "source": "/api/stream/:path*", "destination": "/api/stream" }
+   ]
+   ```
+
+2. Make sure your openMrsService.js is configured to use the proxy for production:
+   - Check that it's using the proxy URL format for API requests
+   - Ensure auth credentials are properly passed through
+
+3. Deploy the latest changes to Vercel:
+   ```bash
+   git add .
+   git commit -m "Fix CORS configuration"
+   git push
+   ```
+
+### For Local Development:
+1. Make sure the proxy server is running:
+   ```bash
+   npm run proxy
+   ```
+
+2. Verify the proxy server is running on port 3001 (check your terminal)
+
+3. For faster testing, you can use the mock data mode by enabling it in Settings
 
 ## 🤝 Contributing
 

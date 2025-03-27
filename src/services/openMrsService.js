@@ -100,9 +100,12 @@ const createOpenMrsApi = (credentials, settings) => {
     }
   }
   
-  // For production deployment, use the actual API directly
+  // For production deployment, use the Vercel serverless function as proxy
+  const PROXY_URL = '/api'
+  
+  // Create axios instance for production proxy
   const api = axios.create({
-    baseURL: `${baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl}`,
+    baseURL: PROXY_URL,
     headers: {
       'Content-Type': 'application/json',
     },
@@ -111,12 +114,17 @@ const createOpenMrsApi = (credentials, settings) => {
       password,
     },
   })
+  
+  // Helper to build proxy URL with query parameters
+  const buildProxyUrl = (path) => {
+    return `?baseUrl=${encodeURIComponent(baseUrl)}&path=${encodeURIComponent(path)}`
+  }
 
   return {
     // Test connection
     testConnection: async () => {
       try {
-        const response = await api.get('/ws/rest/v1/session')
+        const response = await api.get(buildProxyUrl('/ws/rest/v1/session'))
         return { success: response.data.authenticated }
       } catch (error) {
         console.error('Connection test failed:', error)
@@ -127,7 +135,9 @@ const createOpenMrsApi = (credentials, settings) => {
     // Search patients
     searchPatients: async (query) => {
       try {
-        const response = await api.get(`/ws/rest/v1/patient?q=${query}&v=custom:(uuid,display,identifiers,person:(gender,age,birthdate,preferredAddress))`)
+        const response = await api.get(
+          buildProxyUrl(`/ws/rest/v1/patient?q=${query}&v=custom:(uuid,display,identifiers,person:(gender,age,birthdate,preferredAddress))`)
+        )
         return response.data.results
       } catch (error) {
         console.error('Patient search failed:', error)
@@ -140,10 +150,10 @@ const createOpenMrsApi = (credentials, settings) => {
       try {
         // Execute all requests in parallel
         const [patientDetails, encounters, observations, conditions] = await Promise.all([
-          api.get(`/ws/rest/v1/patient/${patientUuid}?v=full`),
-          api.get(`/ws/rest/v1/encounter?patient=${patientUuid}&v=full`),
-          api.get(`/ws/rest/v1/obs?patient=${patientUuid}&v=full`),
-          api.get(`/ws/rest/v1/condition?patient=${patientUuid}&v=full`),
+          api.get(buildProxyUrl(`/ws/rest/v1/patient/${patientUuid}?v=full`)),
+          api.get(buildProxyUrl(`/ws/rest/v1/encounter?patient=${patientUuid}&v=full`)),
+          api.get(buildProxyUrl(`/ws/rest/v1/obs?patient=${patientUuid}&v=full`)),
+          api.get(buildProxyUrl(`/ws/rest/v1/condition?patient=${patientUuid}&v=full`)),
         ])
 
         return {
