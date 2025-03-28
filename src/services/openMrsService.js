@@ -100,12 +100,13 @@ const createOpenMrsApi = (credentials, settings) => {
     }
   }
   
-  // For production deployment, use the Vercel serverless function as proxy
-  const PROXY_URL = '/api'
-  
-  // Create axios instance for production proxy
+  // For production deployment, determine if we need to use the Vercel API route
+  const isVercelProduction = typeof window !== 'undefined' && 
+    window.location.hostname.includes('vercel.app')
+
+  // Create axios instance with appropriate configuration
   const api = axios.create({
-    baseURL: PROXY_URL,
+    // Don't set a baseURL as we'll use the full path in each request
     headers: {
       'Content-Type': 'application/json',
     },
@@ -115,20 +116,72 @@ const createOpenMrsApi = (credentials, settings) => {
     },
   })
   
-  // Helper to build proxy URL with query parameters
+  // Helper to build proxy URL
   const buildProxyUrl = (path) => {
-    return `?baseUrl=${encodeURIComponent(baseUrl)}&path=${encodeURIComponent(path)}`
+    // Always use the query parameter format which is more reliable
+    // For Vercel deployments, also pass credentials in query string (more reliable)
+    const isVercelDeployment = typeof window !== 'undefined' && 
+      window.location.hostname.includes('vercel.app');
+      
+    if (isVercelDeployment) {
+      return `/api?baseUrl=${encodeURIComponent(baseUrl)}&path=${encodeURIComponent(path)}&username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`;
+    } else {
+      return `/api?baseUrl=${encodeURIComponent(baseUrl)}&path=${encodeURIComponent(path)}`;
+    }
   }
 
   return {
     // Test connection
     testConnection: async () => {
       try {
-        const response = await api.get(buildProxyUrl('/ws/rest/v1/session'))
-        return { success: response.data.authenticated }
+        console.log('Testing connection to OpenMRS at:', baseUrl);
+        const fullUrl = buildProxyUrl('/ws/rest/v1/session');
+        console.log('Using full URL:', fullUrl);
+        
+        const response = await api.get(fullUrl);
+        console.log('Connection test response:', response.data);
+        
+        if (response.data && response.data.authenticated === true) {
+          return { success: true };
+        } else {
+          console.warn('Authentication response not as expected:', response.data);
+          return { 
+            success: false, 
+            message: 'Connected to server but authentication failed. Please check credentials.' 
+          };
+        }
       } catch (error) {
-        console.error('Connection test failed:', error)
-        throw new Error(error.response?.data?.error?.message || 'Failed to connect to OpenMRS')
+        console.error('Connection test failed:', error);
+        
+        // Detailed error diagnosis
+        let errorMessage = 'Failed to connect to OpenMRS';
+        
+        if (error.response) {
+          // The request was made and the server responded with a status code
+          // that falls out of the range of 2xx
+          console.error('Response error status:', error.response.status);
+          console.error('Response error data:', error.response.data);
+          
+          if (error.response.status === 401) {
+            errorMessage = 'Authentication failed. Please check your username and password.';
+          } else if (error.response.status === 404) {
+            errorMessage = 'OpenMRS API not found at the specified URL. Please check your server URL.';
+          } else if (error.response.data?.error?.message) {
+            errorMessage = error.response.data.error.message;
+          } else if (error.response.data?.message) {
+            errorMessage = error.response.data.message;
+          }
+        } else if (error.request) {
+          // The request was made but no response was received
+          console.error('No response received:', error.request);
+          errorMessage = 'No response from server. Please check the server URL and ensure it is accessible.';
+        } else {
+          // Something happened in setting up the request that triggered an Error
+          console.error('Request setup error:', error.message);
+          errorMessage = error.message;
+        }
+        
+        throw new Error(errorMessage);
       }
     },
 
