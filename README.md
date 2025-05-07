@@ -3,7 +3,7 @@
 ![OpenMRS AI Insights](https://img.shields.io/badge/OpenMRS-AI%20Insights-brightgreen)
 ![React](https://img.shields.io/badge/React-18.2.0-blue)
 ![Vite](https://img.shields.io/badge/Vite-5.0.0-purple)
-![License](https://img.shields.io/badge/License-MIT-green)
+![License](https://img.shields.io/badge/License-GPL-green)
 
 An AI-powered assistant for OpenMRS that enhances clinical workflows by providing intelligent insights from patient data through a conversational interface.
 
